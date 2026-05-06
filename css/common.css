@@ -197,3 +197,12 @@ h1, h2 {
 .section-head.align-left .section-desc {
   margin-left: 0;
 }
+/* ArtMug iframe mobile scroll fix */
+html {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  overflow-x: hidden;
+  min-height: 100%;
+}

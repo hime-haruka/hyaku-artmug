@@ -10,6 +10,7 @@ const SHEETS = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  initArtmugIframeAutoHeight();
   initIntroSection();
   initShowcaseSection();
   initProcessSection();
@@ -851,4 +852,72 @@ ${form.request.value}
 
   await navigator.clipboard.writeText(text);
   alert('양식이 복사되었습니다.');
+}
+
+// =================================
+//    ArtMug iframe mobile scroll fix
+// =================================
+function initArtmugIframeAutoHeight() {
+  if (window.__hyakuArtmugIframeAutoHeight) return;
+  window.__hyakuArtmugIframeAutoHeight = true;
+
+  const MESSAGE_SOURCE = 'hyaku-artmug';
+  let lastHeight = 0;
+  let rafId = null;
+
+  function getPageHeight() {
+    const doc = document.documentElement;
+    const body = document.body;
+    const main = document.querySelector('main') || body;
+
+    return Math.max(
+      main.scrollHeight,
+      main.offsetHeight,
+      body ? body.scrollHeight : 0,
+      body ? body.offsetHeight : 0,
+      doc ? doc.scrollHeight : 0,
+      doc ? doc.offsetHeight : 0,
+      700
+    );
+  }
+
+  function postHeight(force = false) {
+    if (rafId) cancelAnimationFrame(rafId);
+
+    rafId = requestAnimationFrame(() => {
+      const height = Math.ceil(getPageHeight());
+      if (!force && Math.abs(height - lastHeight) < 4) return;
+      lastHeight = height;
+
+      window.parent.postMessage({
+        source: MESSAGE_SOURCE,
+        type: 'HYAKU_IFRAME_HEIGHT',
+        height
+      }, '*');
+    });
+  }
+
+  window.addEventListener('load', () => postHeight(true));
+  window.addEventListener('resize', () => postHeight(true));
+  window.addEventListener('orientationchange', () => setTimeout(() => postHeight(true), 300));
+
+  if ('ResizeObserver' in window) {
+    const observer = new ResizeObserver(() => postHeight());
+    observer.observe(document.documentElement);
+    if (document.body) observer.observe(document.body);
+    const main = document.querySelector('main');
+    if (main) observer.observe(main);
+  }
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => postHeight(true));
+  }
+
+  document.addEventListener('input', () => postHeight(), true);
+  document.addEventListener('change', () => postHeight(), true);
+
+  postHeight(true);
+  setTimeout(() => postHeight(true), 300);
+  setTimeout(() => postHeight(true), 1000);
+  setTimeout(() => postHeight(true), 2000);
 }
